@@ -1,4 +1,3 @@
-/Brain.class
-/BrainParser.class
-/FileIO.class
-/State.class
+/Cell.class
+/World.class
+/WorldParser.class
