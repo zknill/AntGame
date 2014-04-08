@@ -1,3 +1,5 @@
+import java.util.Random;
+
 
 /**
  * @author zk44
@@ -448,39 +450,39 @@ public class Simulator extends Thread{
 	public command getInstruction(colour c, int state){
 		switch(c){
 		case red: 
-			if(game.brain1.stateList.get(state).arg1.toLowerCase().equals("mark")){
+			if(game.brain1.stateList.get(state).command.toLowerCase().equals("mark")){
 				return command.mark;
-			} else if(game.brain1.stateList.get(state).arg1.toLowerCase().equals("unmark")){
+			} else if(game.brain1.stateList.get(state).command.toLowerCase().equals("unmark")){
 				return command.unmark;
-			} else if(game.brain1.stateList.get(state).arg1.toLowerCase().equals("pickup")){
+			} else if(game.brain1.stateList.get(state).command.toLowerCase().equals("pickup")){
 				return command.pickup;
-			} else if(game.brain1.stateList.get(state).arg1.toLowerCase().equals("drop")){
+			} else if(game.brain1.stateList.get(state).command.toLowerCase().equals("drop")){
 				return command.drop;
-			} else if(game.brain1.stateList.get(state).arg1.toLowerCase().equals("turn")){
+			} else if(game.brain1.stateList.get(state).command.toLowerCase().equals("turn")){
 				return command.turn;
-			} else if(game.brain1.stateList.get(state).arg1.toLowerCase().equals("move")){
+			} else if(game.brain1.stateList.get(state).command.toLowerCase().equals("move")){
 				return command.move;
-			} else if(game.brain1.stateList.get(state).arg1.toLowerCase().equals("flip")){
+			} else if(game.brain1.stateList.get(state).command.toLowerCase().equals("flip")){
 				return command.flip;
-			} else if(game.brain1.stateList.get(state).arg1.toLowerCase().equals("sense")){
+			} else if(game.brain1.stateList.get(state).command.toLowerCase().equals("sense")){
 				return command.sense;
 			}
 		case black:
-			if(game.brain2.stateList.get(state).arg1.toLowerCase().equals("mark")){
+			if(game.brain2.stateList.get(state).command.toLowerCase().equals("mark")){
 				return command.mark;
-			} else if(game.brain2.stateList.get(state).arg1.toLowerCase().equals("unmark")){
+			} else if(game.brain2.stateList.get(state).command.toLowerCase().equals("unmark")){
 				return command.unmark;
-			} else if(game.brain2.stateList.get(state).arg1.toLowerCase().equals("pickup")){
+			} else if(game.brain2.stateList.get(state).command.toLowerCase().equals("pickup")){
 				return command.pickup;
-			} else if(game.brain2.stateList.get(state).arg1.toLowerCase().equals("drop")){
+			} else if(game.brain2.stateList.get(state).command.toLowerCase().equals("drop")){
 				return command.drop;
-			} else if(game.brain2.stateList.get(state).arg1.toLowerCase().equals("turn")){
+			} else if(game.brain2.stateList.get(state).command.toLowerCase().equals("turn")){
 				return command.turn;
-			} else if(game.brain2.stateList.get(state).arg1.toLowerCase().equals("move")){
+			} else if(game.brain2.stateList.get(state).command.toLowerCase().equals("move")){
 				return command.move;
-			} else if(game.brain2.stateList.get(state).arg1.toLowerCase().equals("flip")){
+			} else if(game.brain2.stateList.get(state).command.toLowerCase().equals("flip")){
 				return command.flip;
-			} else if(game.brain2.stateList.get(state).arg1.toLowerCase().equals("sense")){
+			} else if(game.brain2.stateList.get(state).command.toLowerCase().equals("sense")){
 				return command.sense;
 			}
 		}
@@ -527,7 +529,8 @@ public class Simulator extends Thread{
 	int[] sSeries;
 	int xi = 0;
 	public int randomInt(int n){
-		xi++;
+		Random r = new Random();
+		xi = r.nextInt(99);
 		int seed = 12345;
 		sSeries = new int[99];
 		xSeries = new int[99];
@@ -619,21 +622,29 @@ public class Simulator extends Thread{
 			if(a.resting > 0){
 				a.resting =  a.resting -1;
 			} else {
-				switch(getInstruction(colour(a), state)){
+				command cmnd = getInstruction(colour(a), state);
+				switch(cmnd){ //getInstruction(colour(a), state)
 				case sense:
 					p1 = sensedCell(p[0], p[1], a.direction, getSenseDir(arg1));
-					if(cellMatches(p1[0], p1[1], getSenseCondition(arg5), colour(a), arg4)){
+					condition cond = getSenseCondition(arg5);
+					if(cond == null){
+						cond = getSenseCondition(arg4);
+					}
+					if(cellMatches(p1[0], p1[1], cond, colour(a), arg4)){
 						newState = Integer.parseInt(arg2);
 					} else {
 						newState = Integer.parseInt(arg3);
 					}
 					a.setState(newState);
+					break;
 				case mark:
 					setMarkerAt(p[0],p[1],colour(a), arg1);
 					a.setState(Integer.parseInt(arg3));
+					break;
 				case unmark:
 					clearMarkerAt(p[0], p[1], colour(a), arg1);
 					a.setState(Integer.parseInt(arg3));
+					break;
 				case pickup:
 					if(hasFood(a) || foodAt(p[0], p[1]) == 0){
 						a.theState = Integer.parseInt(arg2);
@@ -642,16 +653,19 @@ public class Simulator extends Thread{
 						a.hasFood = true;
 						a.theState = Integer.parseInt(arg1);
 					}
+					break;
 				case drop:
 					if(hasFood(a)){
 						setFoodAt(p[0], p[1], foodAt(p[0], p[1]) + 1);
 						a.hasFood = false;
 					}
 					a.theState = Integer.parseInt(arg1);
+					break;
 					//calculate food collected stats
 				case turn:
 					a.direction = turn(getLR(arg1), a.direction);
 					a.theState = Integer.parseInt(arg2);
+					break;
 				case move:
 					p1 = adjacentCell(p[0], p[1], a.direction);
 					if(game.theWorld.theMap[p1[0]][p1[1]].rock || someAntIsAt(p1[0], p1[1])){
@@ -664,12 +678,15 @@ public class Simulator extends Thread{
 						checkForSurroundedAnts(p1[0], p1[1]);
 						//calculate kill stats
 					}
+					break;
 				case flip:
-					if(randomInt(Integer.parseInt(arg1)) == 0){
+					int rnd = randomInt(Integer.parseInt(arg1));
+					if(rnd == 0){
 						newState = Integer.parseInt(arg2);
 					} else {
 						newState = Integer.parseInt(arg3);
 					}
+					break;
 				}
 			}
 		}
